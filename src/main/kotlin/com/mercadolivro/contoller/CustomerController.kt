@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("customers")
 @Validated
 class CustomerController(
-    val customerService: CustomerService) {
+    private val customerService: CustomerService) {
 
     @GetMapping
     fun getAll(@RequestParam name: String?): ResponseEntity<Iterable<CustomerResponse>> {

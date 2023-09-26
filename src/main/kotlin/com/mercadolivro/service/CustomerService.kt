@@ -12,8 +12,8 @@ import org.springframework.stereotype.Service
 
 @Service
 class CustomerService(
-    val repo: CustomerRepository,
-    @Lazy val bookService: BookService,
+    private val repo: CustomerRepository,
+    @Lazy private val bookService: BookService,
     private val bCrypt: BCryptPasswordEncoder) {
 
     fun getAll(name: String?): Iterable<CustomerModel> {

@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("books")
-class BookController(var service: BookService) {
+class BookController(private var service: BookService) {
 
     @Operation(summary = "Create books", description = "Returns 201 if successful")
     @ApiResponses(
