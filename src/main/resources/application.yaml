@@ -1,0 +1,19 @@
+spring:
+  jackson:
+    default-property-inclusion: non_null
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: none
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/mercado_livro?createDatabaseIfNotExist=true
+    username: _root
+    password: "Europa3121#"
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+springdoc:
+  api-docs:
+    path: "/api-docs"
+  swagger-ui:
+    path: "/swagger-ui.html"
+    enabled: true
