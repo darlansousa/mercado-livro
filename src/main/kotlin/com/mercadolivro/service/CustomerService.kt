@@ -6,14 +6,12 @@ import com.mercadolivro.enums.Roles
 import com.mercadolivro.model.CustomerModel
 import com.mercadolivro.repository.CustomerRepository
 import org.springframework.context.annotation.Lazy
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
 
 @Service
 class CustomerService(
     private val repo: CustomerRepository,
-    @Lazy private val bookService: BookService,
-    private val bCrypt: BCryptPasswordEncoder) {
+    @Lazy private val bookService: BookService) {
 
     fun getAll(name: String?): Iterable<CustomerModel> {
         name?.let { return repo.findByNameContaining(it) }
@@ -26,8 +24,7 @@ class CustomerService(
 
     fun create(customer: CustomerModel): CustomerModel {
         val copyCustomer = customer.copy(
-            roles = setOf(Roles.CUSTOMER),
-            password = bCrypt.encode(customer.password)
+            roles = setOf(Roles.CUSTOMER)
         )
         return repo.save(copyCustomer)
     }
