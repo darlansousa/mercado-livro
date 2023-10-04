@@ -2,6 +2,7 @@ package com.mercadolivro.service
 
 import com.mercadolivro.enums.CustomerStatus
 import com.mercadolivro.enums.Roles
+import com.mercadolivro.exception.BusinessException
 import com.mercadolivro.model.CustomerModel
 import com.mercadolivro.repository.CustomerRepository
 import io.mockk.called
@@ -13,7 +14,6 @@ import io.mockk.verify
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.springframework.context.annotation.Lazy
 import java.util.*
 
 @ExtendWith(MockKExtension::class)
@@ -62,6 +62,44 @@ class CustomerServiceTest {
         verify { bookServiceMock wasNot called }
     }
 
+    @Test
+    fun `should create customer and set Customer Role`() {
+        val email = "dk@gmail.com"
+        val mockCustomer = buildCustomerWithNoRoles(email = email)
+        val expected = buildCustomer(email = email)
+        every { customerRepositoryMock.save(expected) } returns expected
+        val result = subject.create(mockCustomer)
+        assertEquals(expected, result)
+        verify(exactly = 1) { customerRepositoryMock.save(expected) }
+        verify { bookServiceMock wasNot called }
+    }
+
+    @Test
+    fun `should find customer by informed id`() {
+        val id = Random().nextInt()
+        val mockCustomer = buildCustomer()
+        every { customerRepositoryMock.findById(id) } returns Optional.of(mockCustomer)
+        val result = subject.getById(id)
+        assertEquals(mockCustomer, result)
+        verify(exactly = 1) { customerRepositoryMock.findById(id) }
+        verify { bookServiceMock wasNot called }
+    }
+
+    @Test
+    fun `should throw error when customer not found`() {
+        val id = Random().nextInt()
+        val mockCustomer = buildCustomer()
+        every { customerRepositoryMock.findById(id) } returns Optional.empty()
+
+        val error = org.junit.jupiter.api.assertThrows<BusinessException> {
+            subject.getById(id)
+        }
+        assertEquals(error.message, "Customer not found")
+        assertEquals(error.errorCode, "MLBE-2001")
+        verify(exactly = 1) { customerRepositoryMock.findById(id) }
+        verify { bookServiceMock wasNot called }
+    }
+
     private fun buildCustomer(
         id: Int? = null,
         name: String = "customer name",
@@ -75,6 +113,20 @@ class CustomerServiceTest {
         status = CustomerStatus.ACTIVE,
         roles = setOf(Roles.CUSTOMER)
         )
+
+    private fun buildCustomerWithNoRoles(
+        id: Int? = null,
+        name: String = "customer name",
+        email: String = "${UUID.randomUUID()}",
+        password: String = "password"
+    ) = CustomerModel(
+        id = id,
+        name = name,
+        email = email,
+        password = password,
+        status = CustomerStatus.ACTIVE,
+        roles = setOf()
+    )
 
 
 
