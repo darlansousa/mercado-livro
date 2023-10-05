@@ -33,6 +33,7 @@ class CustomerService(
         if(repo.existsById(id)) {
             customer.id = id
             repo.save(customer)
+            return
         }
         throw CUSTOMER_NOT_FOUND.fire()
     }
@@ -53,7 +54,7 @@ class CustomerService(
 
     fun emailAvailable(email: String?): Boolean {
         if(!email.isNullOrEmpty()) {
-            return !repo.existsByEmail(email)
+            return repo.existsByEmail(email)
         }
        return false
     }

@@ -5,21 +5,25 @@ import com.mercadolivro.enums.Roles
 import com.mercadolivro.exception.BusinessException
 import com.mercadolivro.model.CustomerModel
 import com.mercadolivro.repository.CustomerRepository
-import io.mockk.called
-import io.mockk.every
+import io.mockk.*
 import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
+import io.mockk.impl.annotations.SpyK
 import io.mockk.junit5.MockKExtension
-import io.mockk.verify
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EmptySource
+import org.junit.jupiter.params.provider.NullSource
+import org.junit.jupiter.params.provider.ValueSource
 import java.util.*
 
 @ExtendWith(MockKExtension::class)
 class CustomerServiceTest {
 
     @InjectMockKs
+    @SpyK
     private lateinit var subject: CustomerService
 
     @MockK
@@ -88,15 +92,96 @@ class CustomerServiceTest {
     @Test
     fun `should throw error when customer not found`() {
         val id = Random().nextInt()
-        val mockCustomer = buildCustomer()
         every { customerRepositoryMock.findById(id) } returns Optional.empty()
-
         val error = org.junit.jupiter.api.assertThrows<BusinessException> {
             subject.getById(id)
         }
         assertEquals(error.message, "Customer not found")
         assertEquals(error.errorCode, "MLBE-2001")
         verify(exactly = 1) { customerRepositoryMock.findById(id) }
+        verify { bookServiceMock wasNot called }
+    }
+
+    @Test
+    fun `should update existent customer`() {
+        val id = Random().nextInt()
+        val mockCustomer = buildCustomer()
+        every { customerRepositoryMock.existsById(id) } returns true
+        every { customerRepositoryMock.save(mockCustomer) } returns mockCustomer
+        subject.update(id, mockCustomer)
+        verify(exactly = 1) { customerRepositoryMock.existsById(id) }
+        verify(exactly = 1) { customerRepositoryMock.save(mockCustomer) }
+        verify { bookServiceMock wasNot called }
+    }
+
+    @Test
+    fun `should throw not found error when update`() {
+        val id = Random().nextInt()
+        val mockCustomer = buildCustomer()
+        every { customerRepositoryMock.existsById(id) } returns false
+        val error = org.junit.jupiter.api.assertThrows<BusinessException> {
+            subject.update(id, mockCustomer)
+        }
+        assertEquals(error.message, "Customer not found")
+        assertEquals(error.errorCode, "MLBE-2001")
+        verify(exactly = 1) { customerRepositoryMock.existsById(id) }
+        verify(exactly = 0) { customerRepositoryMock.save(mockCustomer) }
+        verify { bookServiceMock wasNot called }
+    }
+
+    @Test
+    fun `should delete existent customer`() {
+        val id = Random().nextInt()
+        val mockCustomer = buildCustomer(id = id)
+        val expected = mockCustomer.copy(status = CustomerStatus.INACTIVE, id = id)
+        every { subject.getById(id) } returns mockCustomer
+        every { bookServiceMock.deleteByCustomerId(id) } just runs
+        every { customerRepositoryMock.save(expected) } returns expected
+        subject.delete(id)
+        verify(exactly = 1) { bookServiceMock.deleteByCustomerId(id) }
+        verify(exactly = 1) { customerRepositoryMock.save(expected) }
+        verify(exactly = 1) { subject.getById(id) }
+    }
+
+    @Test
+    fun `should throw not found error when delete`() {
+        val id = Random().nextInt()
+        val mockCustomer = buildCustomer()
+        every { subject.getById(id) } throws BusinessException("Customer not found", "MLBE-2001")
+        val error = org.junit.jupiter.api.assertThrows<BusinessException> {
+            subject.delete(id)
+        }
+        assertEquals(error.message, "Customer not found")
+        assertEquals(error.errorCode, "MLBE-2001")
+        verify(exactly = 1) { subject.getById(id) }
+        verify(exactly = 0) { customerRepositoryMock.save(mockCustomer) }
+        verify { bookServiceMock wasNot called }
+    }
+
+    @Test
+    fun `should return true when email available`() {
+        val email = Random().nextInt().toString()
+        every { customerRepositoryMock.existsByEmail(email) } returns true
+        assertTrue(subject.emailAvailable(email))
+        verify(exactly = 1) { customerRepositoryMock.existsByEmail(email) }
+        verify { bookServiceMock wasNot called }
+    }
+
+    @Test
+    fun `should return false when email not available`() {
+        val email = Random().nextInt().toString()
+        every { customerRepositoryMock.existsByEmail(email) } returns false
+        assertFalse(subject.emailAvailable(email))
+        verify(exactly = 1) { customerRepositoryMock.existsByEmail(email) }
+        verify { bookServiceMock wasNot called }
+    }
+
+    @ParameterizedTest
+    @EmptySource
+    @NullSource
+    fun `should return false when email is invalid`(email:String?) {
+        assertFalse(subject.emailAvailable(email))
+        verify { customerRepositoryMock  wasNot called}
         verify { bookServiceMock wasNot called }
     }
 
@@ -127,7 +212,5 @@ class CustomerServiceTest {
         status = CustomerStatus.ACTIVE,
         roles = setOf()
     )
-
-
 
 }
