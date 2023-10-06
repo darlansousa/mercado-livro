@@ -3,6 +3,8 @@ package com.mercadolivro.service
 import com.mercadolivro.enums.CustomerStatus
 import com.mercadolivro.enums.Roles
 import com.mercadolivro.exception.BusinessException
+import com.mercadolivro.helper.buildCustomer
+import com.mercadolivro.helper.buildCustomerWithNoRoles
 import com.mercadolivro.model.CustomerModel
 import com.mercadolivro.repository.CustomerRepository
 import io.mockk.*
@@ -184,33 +186,5 @@ class CustomerServiceTest {
         verify { customerRepositoryMock  wasNot called}
         verify { bookServiceMock wasNot called }
     }
-
-    private fun buildCustomer(
-        id: Int? = null,
-        name: String = "customer name",
-        email: String = "${UUID.randomUUID()}",
-        password: String = "password"
-    ) = CustomerModel(
-        id = id,
-        name = name,
-        email = email,
-        password = password,
-        status = CustomerStatus.ACTIVE,
-        roles = setOf(Roles.CUSTOMER)
-        )
-
-    private fun buildCustomerWithNoRoles(
-        id: Int? = null,
-        name: String = "customer name",
-        email: String = "${UUID.randomUUID()}",
-        password: String = "password"
-    ) = CustomerModel(
-        id = id,
-        name = name,
-        email = email,
-        password = password,
-        status = CustomerStatus.ACTIVE,
-        roles = setOf()
-    )
 
 }
